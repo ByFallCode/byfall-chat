@@ -22,7 +22,7 @@ jobs:
           tools: composer
 
       - name: Install dependencies
-        run: composer install --no-dev --no-progress --prefer-dist --optimize-autoloader
+        run: composer update
 
       - name: Run Laravel migrations
         run: php artisan migrate --force
