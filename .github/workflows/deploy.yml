@@ -25,7 +25,7 @@ jobs:
 
       # Étape 3: Installer les dépendances avec Composer
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+        run: composer update
 
       # Étape 4: Configurer le fichier .env
       - name: Set up .env file
