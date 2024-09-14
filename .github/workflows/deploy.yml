@@ -3,16 +3,18 @@ name: Laravel Continuous Deployment
 on:
   push:
     branches:
-      - main  # Déclencher sur chaque push sur la branche "main"
+      - main  # Déclenche sur chaque push sur la branche "main"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # Étape 1: Récupérer le code du dépôt
       - name: Checkout the repository
         uses: actions/checkout@v3
 
+      # Étape 2: Configurer PHP et les extensions nécessaires
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -21,18 +23,47 @@ jobs:
           ini-values: post_max_size=256M, upload_max_filesize=256M
           tools: composer
 
+      # Étape 3: Installer les dépendances avec Composer
       - name: Install dependencies
-        run: composer update
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
+      # Étape 4: Configurer le fichier .env
+      - name: Set up .env file
+        run: |
+          echo "APP_ENV=production" >> .env
+          echo "APP_KEY=${{ secrets.APP_KEY }}" >> .env
+          echo "DB_CONNECTION=mysql" >> .env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+          echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> .env
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "CACHE_DRIVER=file" >> .env
+          echo "SESSION_DRIVER=file" >> .env
+          echo "QUEUE_CONNECTION=sync" >> .env
+
+      # Étape 5: Exécuter les migrations de la base de données
       - name: Run Laravel migrations
         run: php artisan migrate --force
 
+      # Étape 6: Compiler les assets (si applicable)
+      - name: Compile assets (npm)
+        run: |
+          npm install
+          npm run production
+
+      # Étape 7: Synchroniser les fichiers avec le serveur distant via SSH
       - name: Sync files to server
         uses: easingthemes/ssh-deploy@v2.1.5
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          ARGS: "-avzr --delete"
-          SOURCE: "./"
-          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
-          REMOTE_USER: ${{ secrets.REMOTE_USER }}
-          TARGET: "/home/u370313450/public_html/public_html/byfallchat"
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}  # Clé SSH privée pour la connexion au serveur
+          ARGS: "-avzr --delete"  # Arguments pour la synchronisation des fichiers
+          SOURCE: "./"  # Répertoire source à synchroniser
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}  # Adresse du serveur distant
+          REMOTE_USER: ${{ secrets.REMOTE_USER }}  # Utilisateur SSH
+          TARGET: "/home/u370313450/public_html/public_html/byfallchat"  # Répertoire cible sur le serveur
+
+      # Étape 8: Redémarrer le serveur web (facultatif, si nécessaire)
+      - name: Restart the web server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} 'sudo systemctl restart apache2'
