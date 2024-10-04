@@ -20,8 +20,8 @@ jobs:
       - name: Deploy to server
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          port: ${{ secrets.PORT }}
-          key: ${{ secrets.SSHKEY }}
+          host: ${{ HOST }}
+          username: ${{ USERNAME }}
+          port: ${{ PORT }}
+          key: ${{ SSHKEY }}
           script: "cd /home/u370313450/public_html/public_html/byfallchat && ./deploy.sh"
